@@ -701,6 +701,21 @@ var CHEM_AV=6.022e23;
 // CRMARKS: u1-510-antacid-calculation=3
 // CRMARKS: u1-510-airbag-and-fertilizer=3
 
+/* ============ Units and significant figures discipline (Nov 2026 pass) ============
+   Givens print at 3 significant figures minimum (data sheet constants such
+   as molar masses keep their full printed precision). Intermediates print
+   at 4 significant figures: one guard digit, following the Chemistry 3202
+   clarifications rule to carry at least one extra digit through a
+   calculation and round only the final answer. Final answers are stored
+   and printed at 3 significant figures, always with their unit in the
+   solution. Exact numbers (coefficients, counts, ratios) are exempt. */
+function sfR(x,sf){if(!isFinite(x)||x===0)return 0;var d=Math.pow(10,sf-Math.ceil(Math.log10(Math.abs(x))));return Math.round(x*d)/d;}
+function sfSup(e){var m={"-":"\u207B","0":"\u2070","1":"\u00B9","2":"\u00B2","3":"\u00B3","4":"\u2074","5":"\u2075","6":"\u2076","7":"\u2077","8":"\u2078","9":"\u2079"};return String(e).split("").map(function(c){return m[c];}).join("");}
+function sfF(x,sf){var r=sfR(x,sf);if(r===0)return "0."+"000".slice(0,Math.max(0,sf-1));var exp=Math.floor(Math.log10(Math.abs(r))),dec=sf-1-exp;if(dec<0){return (r/Math.pow(10,exp)).toFixed(sf-1)+" \u00D7 10"+sfSup(exp);}return r.toFixed(dec);}
+function F3(x){return sfF(x,3);}
+function iF(x){return sfF(x,4);}
+function gF(x){for(var sf=3;sf<=5;sf++){if(Math.abs(sfR(x,sf)-x)<=Math.abs(x)*1e-9+1e-12)return sfF(x,sf);}return fmt(x);}
+
 E("u1-51-name-to-formula",1,["5.1"],1,"gen",function(){
   function sb(n){var s=String(n),o="",i;for(i=0;i<s.length;i++){o+=String.fromCharCode(0x2080+parseInt(s.charAt(i),10));}return o;}
   function gcd(a,b){while(b){var t=a%b;a=b;b=t;}return a;}
@@ -810,41 +825,41 @@ E("u1-52-molar-mass",1,["5.2"],1,"gen",function(){
   var b=pick(bases),w=pick([0,0,0,0,1,2,3,5,6,7,10]);
   var m=b.m+w*water,f=b.f;
   if(w>0){f=b.f+"\u00B7"+w+"H\u2082O";}
-  var sol="Molar mass is the mass of one mole of formula units. Add the atomic masses of all the atoms in the formula: "+b.b+" = "+fmt(b.m)+" g/mol for the anhydrous compound.";
-  if(w>0){sol+=" The hydrate also contains "+w+" water molecules per formula unit, adding "+w+"(18.02) = "+fmt(w*water)+" g/mol. The total molar mass is <b>"+fmt(m)+" g/mol</b>.";}
-  else{sol+=" The molar mass is <b>"+fmt(m)+" g/mol</b>.";}
+  var sol="Molar mass is the mass of one mole of formula units. Add the atomic masses of all the atoms in the formula: "+b.b+" = "+fmtF(b.m,2)+" g/mol for the anhydrous compound.";
+  if(w>0){sol+=" The hydrate also contains "+w+" water molecules per formula unit, adding "+w+"(18.02) = "+fmtF(w*water,2)+" g/mol. The total molar mass is <b>"+fmtF(m,2)+" g/mol</b>.";}
+  else{sol+=" The molar mass is <b>"+fmtF(m,2)+" g/mol</b>.";}
   return numq("Calculate the molar mass of "+f+". Give your answer in g/mol.",m,Math.max(0.05,m*0.01),sol,{cp:b.f,w:w});
 });
 
 E("u1-52-mass-to-moles",1,["5.2"],2,"gen",function(){
   var cps=[{f:"CO\u2082",m:CHEM_AM.C+2*CHEM_AM.O},{f:"H\u2082O",m:2*CHEM_AM.H+CHEM_AM.O},{f:"NH\u2083",m:CHEM_AM.N+3*CHEM_AM.H},{f:"NaCl",m:CHEM_AM.Na+CHEM_AM.Cl},{f:"O\u2082",m:2*CHEM_AM.O},{f:"CH\u2084",m:CHEM_AM.C+4*CHEM_AM.H},{f:"C\u2086H\u2081\u2082O\u2086",m:6*CHEM_AM.C+12*CHEM_AM.H+6*CHEM_AM.O},{f:"CaCO\u2083",m:CHEM_AM.Ca+CHEM_AM.C+3*CHEM_AM.O},{f:"MgO",m:CHEM_AM.Mg+CHEM_AM.O},{f:"H\u2082SO\u2084",m:2*CHEM_AM.H+CHEM_AM.S+4*CHEM_AM.O},{f:"KOH",m:CHEM_AM.K+CHEM_AM.O+CHEM_AM.H},{f:"Fe",m:CHEM_AM.Fe},{f:"Cu",m:CHEM_AM.Cu},{f:"N\u2082",m:2*CHEM_AM.N}];
   var cp=pick(cps),n=ri(15,950)/100,mass=Math.round(n*cp.m*100)/100;
-  return numq("How many moles are in "+fmt(mass)+" g of "+cp.f+"? Give your answer in mol (the molar mass of "+cp.f+" is "+fmt(cp.m)+" g/mol).",n,Math.max(0.01,n*0.02),"Amount in moles = mass / molar mass = "+fmt(mass)+" / "+fmt(cp.m)+" = <b>"+fmt(n)+" mol</b>.",{cp:cp.f,n:n});
+  return numq("How many moles are in "+gF(mass)+" g of "+cp.f+"? Give your answer in mol (the molar mass of "+cp.f+" is "+fmtF(cp.m,2)+" g/mol).",sfR(n,3),Math.max(0.01,n*0.02),"Amount in moles = mass / molar mass = "+gF(mass)+" g / "+fmtF(cp.m,2)+" g/mol = <b>"+F3(n)+" mol</b>.",{cp:cp.f,n:n});
 });
 
 E("u1-52-moles-to-mass",1,["5.2"],2,"gen",function(){
   var cps=[{f:"CO\u2082",m:CHEM_AM.C+2*CHEM_AM.O},{f:"H\u2082O",m:2*CHEM_AM.H+CHEM_AM.O},{f:"NH\u2083",m:CHEM_AM.N+3*CHEM_AM.H},{f:"NaCl",m:CHEM_AM.Na+CHEM_AM.Cl},{f:"O\u2082",m:2*CHEM_AM.O},{f:"CH\u2084",m:CHEM_AM.C+4*CHEM_AM.H},{f:"C\u2086H\u2081\u2082O\u2086",m:6*CHEM_AM.C+12*CHEM_AM.H+6*CHEM_AM.O},{f:"CaCO\u2083",m:CHEM_AM.Ca+CHEM_AM.C+3*CHEM_AM.O},{f:"MgO",m:CHEM_AM.Mg+CHEM_AM.O},{f:"H\u2082SO\u2084",m:2*CHEM_AM.H+CHEM_AM.S+4*CHEM_AM.O},{f:"KOH",m:CHEM_AM.K+CHEM_AM.O+CHEM_AM.H},{f:"Zn",m:CHEM_AM.Zn},{f:"Ag",m:CHEM_AM.Ag},{f:"SO\u2082",m:CHEM_AM.S+2*CHEM_AM.O}];
-  var cp=pick(cps),n=ri(5,800)/100,mass=Math.round(n*cp.m*100)/100;
-  return numq("What mass, in grams, is "+fmt(n)+" mol of "+cp.f+"? Give your answer in g (the molar mass of "+cp.f+" is "+fmt(cp.m)+" g/mol).",mass,Math.max(0.05,mass*0.02),"Mass = amount in moles \u00D7 molar mass = "+fmt(n)+" \u00D7 "+fmt(cp.m)+" = <b>"+fmt(mass)+" g</b>.",{cp:cp.f,n:n});
+  var cp=pick(cps),n=ri(5,800)/100,ans=sfR(n*cp.m,3);
+  return numq("What mass, in grams, is "+gF(n)+" mol of "+cp.f+"? Give your answer in g (the molar mass of "+cp.f+" is "+fmtF(cp.m,2)+" g/mol).",ans,Math.max(0.05,ans*0.02),"Mass = amount in moles \u00D7 molar mass = "+gF(n)+" mol \u00D7 "+fmtF(cp.m,2)+" g/mol = <b>"+F3(ans)+" g</b>.",{cp:cp.f,n:n});
 });
 
 E("u1-52-particles-to-moles",1,["5.2"],2,"gen",function(){
   var cps=[{f:"H\u2082O",p:"molecules"},{f:"CO\u2082",p:"molecules"},{f:"NH\u2083",p:"molecules"},{f:"CH\u2084",p:"molecules"},{f:"O\u2082",p:"molecules"},{f:"NaCl",p:"formula units"},{f:"CaCO\u2083",p:"formula units"},{f:"MgO",p:"formula units"},{f:"Fe",p:"atoms"},{f:"Cu",p:"atoms"},{f:"Zn",p:"atoms"},{f:"He",p:"atoms"}];
   var cp=pick(cps),e=pick([23,23,24]),k=ri(120,950)/100;
-  var moles=k*Math.pow(10,e-23)/6.022;
-  return numq("A sample contains \\("+fmtF(k,2)+" \\times 10^{"+e+"}\\) "+cp.p+" of "+cp.f+". How many moles is this? Give your answer in mol.",moles,Math.max(0.01,moles*0.02),"One mole contains \\(6.022 \\times 10^{23}\\) particles. Amount in moles = number of particles / \\(6.022 \\times 10^{23}\\) = \\("+fmtF(k,2)+" \\times 10^{"+e+"}\\) / \\(6.022 \\times 10^{23}\\) = <b>"+fmt(moles)+" mol</b>.",{cp:cp.f,k:k,e:e});
+  var moles=k*Math.pow(10,e-23)/6.022,ans=sfR(moles,3);
+  return numq("A sample contains \\("+fmtF(k,2)+" \\times 10^{"+e+"}\\) "+cp.p+" of "+cp.f+". How many moles is this? Give your answer in mol.",ans,Math.max(0.01,ans*0.02),"One mole contains \\(6.022 \\times 10^{23}\\) particles. Amount in moles = number of particles / \\(6.022 \\times 10^{23}\\) = \\("+fmtF(k,2)+" \\times 10^{"+e+"}\\) / \\(6.022 \\times 10^{23}\\) = <b>"+F3(ans)+" mol</b>.",{cp:cp.f,k:k,e:e});
 });
 
 E("u1-52-mass-to-particles",1,["5.2"],3,"gen",function(){
   var cps=[{f:"H\u2082O",m:2*CHEM_AM.H+CHEM_AM.O,p:"molecules"},{f:"CO\u2082",m:CHEM_AM.C+2*CHEM_AM.O,p:"molecules"},{f:"NH\u2083",m:CHEM_AM.N+3*CHEM_AM.H,p:"molecules"},{f:"CH\u2084",m:CHEM_AM.C+4*CHEM_AM.H,p:"molecules"},{f:"NaCl",m:CHEM_AM.Na+CHEM_AM.Cl,p:"formula units"},{f:"CaCO\u2083",m:CHEM_AM.Ca+CHEM_AM.C+3*CHEM_AM.O,p:"formula units"},{f:"Fe",m:CHEM_AM.Fe,p:"atoms"},{f:"Cu",m:CHEM_AM.Cu,p:"atoms"}];
-  var cp=pick(cps),n=ri(20,600)/100,mass=Math.round(n*cp.m*100)/100,ans=n*CHEM_AV;
-  return numq("How many "+cp.p+" are in "+fmt(mass)+" g of "+cp.f+"? Give your answer as a number in scientific notation, for example 1.20e24 (the molar mass of "+cp.f+" is "+fmt(cp.m)+" g/mol).",ans,ans*0.02,"First change mass to moles: "+fmt(mass)+" / "+fmt(cp.m)+" = "+fmt(n)+" mol. Then multiply by the Avogadro constant: "+fmt(n)+" \u00D7 \\(6.022 \\times 10^{23}\\) = <b>"+ans.toExponential(2)+" "+cp.p+"</b>.",{cp:cp.f,n:n});
+  var cp=pick(cps),nDrawn=ri(20,600)/100,mass=Math.round(nDrawn*cp.m*100)/100,n=mass/cp.m,ans=sfR(sfR(n,4)*CHEM_AV,3);
+  return numq("How many "+cp.p+" are in "+gF(mass)+" g of "+cp.f+"? Give your answer as a number in scientific notation, for example 1.20e24 (the molar mass of "+cp.f+" is "+fmtF(cp.m,2)+" g/mol).",ans,ans*0.02,"First change mass to moles: "+gF(mass)+" g / "+fmtF(cp.m,2)+" g/mol = "+iF(n)+" mol. Then multiply by the Avogadro constant: "+iF(n)+" \u00D7 \\(6.022 \\times 10^{23}\\) = <b>"+ans.toExponential(2)+" "+cp.p+"</b>.",{cp:cp.f,n:nDrawn});
 });
 
 E("u1-52-mass-to-volume-stp",1,["5.2"],2,"gen",function(){
   var gases=[{f:"O\u2082",m:2*CHEM_AM.O},{f:"N\u2082",m:2*CHEM_AM.N},{f:"CO\u2082",m:CHEM_AM.C+2*CHEM_AM.O},{f:"H\u2082",m:2*CHEM_AM.H},{f:"NH\u2083",m:CHEM_AM.N+3*CHEM_AM.H},{f:"CH\u2084",m:CHEM_AM.C+4*CHEM_AM.H},{f:"SO\u2082",m:CHEM_AM.S+2*CHEM_AM.O},{f:"CO",m:CHEM_AM.C+CHEM_AM.O}];
-  var g=pick(gases),n=ri(10,500)/100,mass=Math.round(n*g.m*100)/100,vol=Math.round(n*22.4*100)/100;
-  return numq("What volume does "+fmt(mass)+" g of "+g.f+" gas occupy at STP? Give your answer in L (the molar mass of "+g.f+" is "+fmt(g.m)+" g/mol, and the molar volume at STP is 22.4 L/mol).",vol,Math.max(0.05,vol*0.02),"First change mass to moles: "+fmt(mass)+" / "+fmt(g.m)+" = "+fmt(n)+" mol. Then multiply by the molar volume at STP: "+fmt(n)+" \u00D7 22.4 = <b>"+fmt(vol)+" L</b>.",{cp:g.f,n:n});
+  var g=pick(gases),nDrawn=ri(10,500)/100,mass=sfR(nDrawn*g.m,4),n=mass/g.m,vol=sfR(sfR(n,4)*22.4,3);
+  return numq("What volume does "+gF(mass)+" g of "+g.f+" gas occupy at STP? Give your answer in L (the molar mass of "+g.f+" is "+fmtF(g.m,2)+" g/mol, and the molar volume at STP is 22.4 L/mol).",vol,Math.max(0.05,vol*0.02),"First change mass to moles: "+gF(mass)+" g / "+fmtF(g.m,2)+" g/mol = "+iF(n)+" mol. Then multiply by the molar volume at STP: "+iF(n)+" \u00D7 22.4 L/mol = <b>"+F3(vol)+" L</b>.",{cp:g.f,n:nDrawn});
 });
 
 E("u1-53-dynamic-equilibrium",1,["5.3"],1,"gen",function(){
@@ -924,7 +939,7 @@ E("u1-54-what-stays-constant",1,["5.4"],2,"var",varset([
     return mcq("A saturated solution of "+s+" at "+t+" \u00B0C is at equilibrium with "+m+" g of solid. What can be said about that "+m+" g of solid over the next hour at the same temperature?","Its total mass stays "+m+" g, although the particles making it up change",["Its total mass slowly increases as more solute crystallizes than dissolves","Its total mass slowly decreases as more solute dissolves than crystallizes","It all dissolves and an equal mass of new solid appears at once"],"Because dissolving and crystallizing balance, there is no net change in the solid. Individual particles exchange, but the total mass of solid stays "+m+" g.",{solute:s,m:m,t:t});
   },
   function(){
-    var s=pick(["potassium nitrate","sodium nitrate","ammonium chloride"]),t=ri(21,35),c=pick(["3.0","4.5","5.2","6.1"]);
+    var s=pick(["potassium nitrate","sodium nitrate","ammonium chloride"]),t=ri(21,35),c=pick(["3.00","4.50","5.20","6.10"]);
     return mcq("At "+t+" \u00B0C a saturated solution of "+s+" has a solute concentration of "+c+" mol/L. The closed system sits at equilibrium for two days at the same temperature. The concentration after two days is","Still "+c+" mol/L, because the two rates are equal",["Higher than "+c+" mol/L, because dissolving continues","Lower than "+c+" mol/L, because crystallizing continues","Zero, because equilibrium means the reaction is finished"],"Both processes continue at equilibrium, but at equal rates, so there is no net change. The concentration remains "+c+" mol/L.",{solute:s,t:t});
   },
   function(){
@@ -1139,8 +1154,8 @@ E("u1-57-moles-direct",1,["5.7"],2,"gen",function(){
   ];
   var r=pick(rxns),i=ri(0,r.sp.length-1),j=ri(0,r.sp.length-1);
   while(j===i){j=ri(0,r.sp.length-1);}
-  var G=r.sp[i],T=r.sp[j],given=ri(10,900)/100,ans=Math.round(given*T.c/G.c*1000)/1000;
-  return numq("For the reaction "+r.eq+", how many moles of "+T.n+" are produced or consumed when "+fmt(given)+" mol of "+G.n+" reacts? Give your answer in mol.",ans,Math.max(0.01,ans*0.02),"Use the mole ratio from the balanced equation: moles of "+T.n+" = "+fmt(given)+" mol "+G.n+" \u00D7 ("+T.c+" mol "+T.n+" / "+G.c+" mol "+G.n+") = <b>"+fmt(ans)+" mol</b>.",{eq:r.eq,g:G.n,t:T.n,given:given});
+  var G=r.sp[i],T=r.sp[j],given=ri(10,900)/100,ans=sfR(given*T.c/G.c,3);
+  return numq("For the reaction "+r.eq+", how many moles of "+T.n+" are produced or consumed when "+gF(given)+" mol of "+G.n+" reacts? Give your answer in mol.",ans,Math.max(0.01,ans*0.02),"Use the mole ratio from the balanced equation: moles of "+T.n+" = "+gF(given)+" mol "+G.n+" \u00D7 ("+T.c+" mol "+T.n+" / "+G.c+" mol "+G.n+") = <b>"+F3(ans)+" mol</b>.",{eq:r.eq,g:G.n,t:T.n,given:given});
 });
 
 E("u1-57-moles-reverse",1,["5.7"],2,"gen",function(){
@@ -1154,8 +1169,8 @@ E("u1-57-moles-reverse",1,["5.7"],2,"gen",function(){
   ];
   var r=pick(rxns),prods=[],reacts=[];
   for(var i=0;i<r.sp.length;i++){if(r.sp[i].role==="p"){prods.push(r.sp[i]);}else{reacts.push(r.sp[i]);}}
-  var P=pick(prods),R=pick(reacts),given=ri(20,950)/100,ans=Math.round(given*R.c/P.c*1000)/1000;
-  return numq("For the reaction "+r.eq+", a student wants to produce "+fmt(given)+" mol of "+P.n+". How many moles of "+R.n+" are needed? Give your answer in mol.",ans,Math.max(0.01,ans*0.02),"Work backwards with the mole ratio from the balanced equation: moles of "+R.n+" = "+fmt(given)+" mol "+P.n+" \u00D7 ("+R.c+" mol "+R.n+" / "+P.c+" mol "+P.n+") = <b>"+fmt(ans)+" mol</b>.",{eq:r.eq,p:P.n,r:R.n,given:given});
+  var P=pick(prods),R=pick(reacts),given=ri(20,950)/100,ans=sfR(given*R.c/P.c,3);
+  return numq("For the reaction "+r.eq+", a student wants to produce "+gF(given)+" mol of "+P.n+". How many moles of "+R.n+" are needed? Give your answer in mol.",ans,Math.max(0.01,ans*0.02),"Work backwards with the mole ratio from the balanced equation: moles of "+R.n+" = "+gF(given)+" mol "+P.n+" \u00D7 ("+R.c+" mol "+R.n+" / "+P.c+" mol "+P.n+") = <b>"+F3(ans)+" mol</b>.",{eq:r.eq,p:P.n,r:R.n,given:given});
 });
 
 E("u1-57-moles-mcq",1,["5.7"],2,"gen",function(){
@@ -1174,7 +1189,7 @@ E("u1-57-moles-mcq",1,["5.7"],2,"gen",function(){
   var vals=[ans,d1,d2,d3],tries=0;
   function clash(a,b){return Math.abs(a-b)<0.02;}
   while(tries<20&&(clash(d1,ans)||clash(d2,ans)||clash(d3,ans)||clash(d1,d2)||clash(d1,d3)||clash(d2,d3))){d3=d3+0.53;d1=clash(d1,ans)||clash(d1,d2)?d1+1.37:d1;d2=clash(d2,ans)?d2+2.11:d2;tries++;}
-  return mcq("For the reaction "+r.eq+", how many moles of "+T.n+" are involved when "+fmtF(given,2)+" mol of "+G.n+" reacts? Give your answer in mol.",fmtF(ans,2),[fmtF(d1,2),fmtF(d2,2),fmtF(d3,2)],"Apply the mole ratio from the coefficients: "+fmtF(given,2)+" mol "+G.n+" \u00D7 ("+T.c+" / "+G.c+") = <b>"+fmtF(ans,2)+" mol</b> of "+T.n+". Using the ratio upside down, or skipping the ratio entirely, gives the other values.",{eq:r.eq,g:G.n,t:T.n,given:given});
+  return mcq("For the reaction "+r.eq+", how many moles of "+T.n+" are involved when "+gF(given)+" mol of "+G.n+" reacts? Give your answer in mol.",F3(ans),[F3(d1),F3(d2),F3(d3)],"Apply the mole ratio from the coefficients: "+gF(given)+" mol "+G.n+" \u00D7 ("+T.c+" / "+G.c+") = <b>"+F3(ans)+" mol</b> of "+T.n+". Using the ratio upside down, or skipping the ratio entirely, gives the other values.",{eq:r.eq,g:G.n,t:T.n,given:given});
 });
 
 E("u1-57-particles-ratio",1,["5.7"],3,"gen",function(){
@@ -1187,8 +1202,8 @@ E("u1-57-particles-ratio",1,["5.7"],3,"gen",function(){
   ];
   var r=pick(rxns),i=ri(0,r.sp.length-1),j=ri(0,r.sp.length-1);
   while(j===i){j=ri(0,r.sp.length-1);}
-  var G=r.sp[i],T=r.sp[j],k=ri(150,900)/100,molesGiven=k/6.022,ans=molesGiven*T.c/G.c;
-  return numq("For the reaction "+r.eq+", a sample contains \\("+fmtF(k,2)+" \\times 10^{23}\\) particles of "+G.n+". How many moles of "+T.n+" will react with or form from this sample? Give your answer in mol.",ans,Math.max(0.01,ans*0.02),"First change particles to moles: \\("+fmtF(k,2)+" \\times 10^{23}\\) / \\(6.022 \\times 10^{23}\\) = "+fmt(molesGiven)+" mol of "+G.n+". Then apply the mole ratio from the equation: "+fmt(molesGiven)+" \u00D7 ("+T.c+" / "+G.c+") = <b>"+fmt(ans)+" mol</b> of "+T.n+".",{eq:r.eq,g:G.n,t:T.n,k:k});
+  var G=r.sp[i],T=r.sp[j],k=ri(150,900)/100,molesGiven=sfR(k/6.022,4),ans=sfR(molesGiven*T.c/G.c,3);
+  return numq("For the reaction "+r.eq+", a sample contains \\("+fmtF(k,2)+" \\times 10^{23}\\) particles of "+G.n+". How many moles of "+T.n+" will react with or form from this sample? Give your answer in mol.",ans,Math.max(0.01,ans*0.02),"First change particles to moles: \\("+fmtF(k,2)+" \\times 10^{23}\\) / \\(6.022 \\times 10^{23}\\) = "+iF(molesGiven)+" mol of "+G.n+". Then apply the mole ratio from the equation: "+iF(molesGiven)+" \u00D7 ("+T.c+" / "+G.c+") = <b>"+F3(ans)+" mol</b> of "+T.n+".",{eq:r.eq,g:G.n,t:T.n,k:k});
 });
 
 E("u1-58-mass-to-mass",1,["5.8"],2,"gen",function(){
@@ -1202,8 +1217,8 @@ E("u1-58-mass-to-mass",1,["5.8"],2,"gen",function(){
     {eq:"Zn + 2HCl \u2192 ZnCl\u2082 + H\u2082",A:{f:"Zn",m:CHEM_AM.Zn,c:1},B:{f:"ZnCl\u2082",m:CHEM_AM.Zn+2*CHEM_AM.Cl,c:1}},
     {eq:"Fe\u2082O\u2083 + 3CO \u2192 2Fe + 3CO\u2082",A:{f:"Fe\u2082O\u2083",m:2*CHEM_AM.Fe+3*CHEM_AM.O,c:1},B:{f:"Fe",m:CHEM_AM.Fe,c:2}}
   ];
-  var r=pick(rxns),massA=ri(20,2000)/10,nA=massA/r.A.m,nB=nA*r.B.c/r.A.c,ans=nB*r.B.m;
-  return numq("For the reaction "+r.eq+", what mass of "+r.B.f+" is produced from "+fmt(massA)+" g of "+r.A.f+"? Give your answer in g.",ans,Math.max(0.05,ans*0.02),"Change the given mass to moles: "+fmt(massA)+" / "+fmt(r.A.m)+" = "+fmt(nA)+" mol of "+r.A.f+". Apply the mole ratio: "+fmt(nA)+" \u00D7 ("+r.B.c+" / "+r.A.c+") = "+fmt(nB)+" mol of "+r.B.f+". Change back to mass: "+fmt(nB)+" \u00D7 "+fmt(r.B.m)+" = <b>"+fmt(ans)+" g</b>.",{eq:r.eq,massA:massA});
+  var r=pick(rxns),massA=ri(20,2000)/10,nA=sfR(massA/r.A.m,4),nB=sfR(nA*r.B.c/r.A.c,4),ans=sfR(nB*r.B.m,3);
+  return numq("For the reaction "+r.eq+", what mass of "+r.B.f+" is produced from "+gF(massA)+" g of "+r.A.f+"? Give your answer in g.",ans,Math.max(0.05,ans*0.02),"Change the given mass to moles: "+gF(massA)+" g / "+fmtF(r.A.m,2)+" g/mol = "+iF(nA)+" mol of "+r.A.f+". Apply the mole ratio: "+iF(nA)+" \u00D7 ("+r.B.c+" / "+r.A.c+") = "+iF(nB)+" mol of "+r.B.f+". Change back to mass: "+iF(nB)+" \u00D7 "+fmtF(r.B.m,2)+" g/mol = <b>"+F3(ans)+" g</b>.",{eq:r.eq,massA:massA});
 });
 
 E("u1-58-mass-to-gas-volume",1,["5.8"],2,"gen",function(){
@@ -1215,28 +1230,28 @@ E("u1-58-mass-to-gas-volume",1,["5.8"],2,"gen",function(){
     {eq:"Na\u2082CO\u2083 + 2HCl \u2192 2NaCl + H\u2082O + CO\u2082",A:{f:"Na\u2082CO\u2083",m:2*CHEM_AM.Na+CHEM_AM.C+3*CHEM_AM.O,c:1},G:{f:"CO\u2082",c:1}},
     {eq:"2NaHCO\u2083 \u2192 Na\u2082CO\u2083 + H\u2082O + CO\u2082",A:{f:"NaHCO\u2083",m:CHEM_AM.Na+CHEM_AM.H+CHEM_AM.C+3*CHEM_AM.O,c:2},G:{f:"CO\u2082",c:1}}
   ];
-  var r=pick(rxns),massA=ri(10,1500)/10,nA=massA/r.A.m,nG=nA*r.G.c/r.A.c,ans=nG*22.4;
-  return numq("For the reaction "+r.eq+", what volume of "+r.G.f+" gas at STP is produced from "+fmt(massA)+" g of "+r.A.f+"? Give your answer in L.",ans,Math.max(0.05,ans*0.02),"Change the given mass to moles: "+fmt(massA)+" / "+fmt(r.A.m)+" = "+fmt(nA)+" mol of "+r.A.f+". Apply the mole ratio: "+fmt(nA)+" \u00D7 ("+r.G.c+" / "+r.A.c+") = "+fmt(nG)+" mol of "+r.G.f+". Change moles of gas to volume at STP: "+fmt(nG)+" \u00D7 22.4 = <b>"+fmt(ans)+" L</b>.",{eq:r.eq,massA:massA});
+  var r=pick(rxns),massA=ri(10,1500)/10,nA=sfR(massA/r.A.m,4),nG=sfR(nA*r.G.c/r.A.c,4),ans=sfR(nG*22.4,3);
+  return numq("For the reaction "+r.eq+", what volume of "+r.G.f+" gas at STP is produced from "+gF(massA)+" g of "+r.A.f+"? Give your answer in L.",ans,Math.max(0.05,ans*0.02),"Change the given mass to moles: "+gF(massA)+" g / "+fmtF(r.A.m,2)+" g/mol = "+iF(nA)+" mol of "+r.A.f+". Apply the mole ratio: "+iF(nA)+" \u00D7 ("+r.G.c+" / "+r.A.c+") = "+iF(nG)+" mol of "+r.G.f+". Change moles of gas to volume at STP: "+iF(nG)+" \u00D7 22.4 L/mol = <b>"+F3(ans)+" L</b>.",{eq:r.eq,massA:massA});
 });
 
 E("u1-58-concentration",1,["5.8"],2,"gen",function(){
   if(pick(["moles","mass"])==="moles"){
-    var n=ri(5,400)/100,v=ri(100,1000),c=n/(v/1000);
-    return numq("A solution is made by dissolving "+fmt(n)+" mol of solute and making the volume up to "+v+" mL. Calculate the amount concentration of the solution. Give your answer in mol/L.",c,Math.max(0.01,c*0.02),"Amount concentration c = n / V. Convert the volume to litres: "+v+" mL = "+fmt(v/1000)+" L. Then c = "+fmt(n)+" / "+fmt(v/1000)+" = <b>"+fmt(c)+" mol/L</b>.",{n:n,v:v});
+    var n=ri(5,400)/100,v=ri(100,1000),c=sfR(n/(v/1000),3);
+    return numq("A solution is made by dissolving "+gF(n)+" mol of solute and making the volume up to "+v+" mL. Calculate the amount concentration of the solution. Give your answer in mol/L.",c,Math.max(0.01,c*0.02),"Amount concentration c = n / V. Convert the volume to litres: "+v+" mL = "+F3(v/1000)+" L. Then c = "+gF(n)+" mol / "+F3(v/1000)+" L = <b>"+F3(c)+" mol/L</b>.",{n:n,v:v});
   }
   var cps=[{f:"NaCl",m:CHEM_AM.Na+CHEM_AM.Cl},{f:"KNO\u2083",m:CHEM_AM.K+CHEM_AM.N+3*CHEM_AM.O},{f:"C\u2086H\u2081\u2082O\u2086",m:6*CHEM_AM.C+12*CHEM_AM.H+6*CHEM_AM.O},{f:"CuSO\u2084",m:CHEM_AM.Cu+CHEM_AM.S+4*CHEM_AM.O},{f:"NaOH",m:CHEM_AM.Na+CHEM_AM.O+CHEM_AM.H},{f:"CaCl\u2082",m:CHEM_AM.Ca+2*CHEM_AM.Cl}];
-  var cp=pick(cps),mass=ri(10,600)/10,v2=pick([250,500,750,1000]),n2=mass/cp.m,c2=n2/(v2/1000);
-  return numq("A solution is made by dissolving "+fmt(mass)+" g of "+cp.f+" and making the volume up to "+v2+" mL. Calculate the amount concentration of the solution. Give your answer in mol/L (the molar mass of "+cp.f+" is "+fmt(cp.m)+" g/mol).",c2,Math.max(0.01,c2*0.02),"First change mass to moles: "+fmt(mass)+" / "+fmt(cp.m)+" = "+fmt(n2)+" mol. Convert the volume: "+v2+" mL = "+fmt(v2/1000)+" L. Then c = n / V = "+fmt(n2)+" / "+fmt(v2/1000)+" = <b>"+fmt(c2)+" mol/L</b>.",{cp:cp.f,mass:mass,v:v2});
+  var cp=pick(cps),mass=ri(10,600)/10,v2=pick([250,500,750,1000]),n2=sfR(mass/cp.m,4),c2=sfR(n2/(v2/1000),3);
+  return numq("A solution is made by dissolving "+gF(mass)+" g of "+cp.f+" and making the volume up to "+v2+" mL. Calculate the amount concentration of the solution. Give your answer in mol/L (the molar mass of "+cp.f+" is "+fmtF(cp.m,2)+" g/mol).",c2,Math.max(0.01,c2*0.02),"First change mass to moles: "+gF(mass)+" g / "+fmtF(cp.m,2)+" g/mol = "+iF(n2)+" mol. Convert the volume: "+v2+" mL = "+F3(v2/1000)+" L. Then c = n / V = "+iF(n2)+" mol / "+F3(v2/1000)+" L = <b>"+F3(c2)+" mol/L</b>.",{cp:cp.f,mass:mass,v:v2});
 });
 
 E("u1-58-dilution",1,["5.8"],2,"gen",function(){
   var stock=pick(["hydrochloric acid","sodium hydroxide solution","copper(II) sulfate solution","potassium nitrate solution","ammonia solution"]);
   if(pick(["volume","conc"])==="volume"){
-    var c1=pick([0.50,1.00,2.00,3.00,4.00,6.00]),v1=ri(10,250),factor=pick([2,4,5,10]),c2=c1/factor,ans=c1*v1/c2;
-    return numq("A student dilutes "+v1+" mL of "+fmt(c1)+" mol/L "+stock+" to prepare a "+fmt(c2)+" mol/L solution, using c\u2081V\u2081 = c\u2082V\u2082. What final volume is needed? Give your answer in mL.",ans,Math.max(0.5,ans*0.02),"The amount of solute does not change during dilution, so c\u2081V\u2081 = c\u2082V\u2082. Substitute: "+fmt(c1)+" \u00D7 "+v1+" = "+fmt(c2)+" \u00D7 V\u2082. Solving gives V\u2082 = "+fmt(c1*v1)+" / "+fmt(c2)+" = <b>"+fmt(ans)+" mL</b>.",{c1:c1,v1:v1,c2:c2});
+    var c1=pick([0.50,1.00,2.00,3.00,4.00,6.00]),v1=ri(10,250),factor=pick([2,4,5,10]),c2=c1/factor,ans=sfR(c1*v1/c2,3);
+    return numq("A student dilutes "+v1+" mL of "+F3(c1)+" mol/L "+stock+" to prepare a "+F3(c2)+" mol/L solution, using c\u2081V\u2081 = c\u2082V\u2082. What final volume is needed? Give your answer in mL.",ans,Math.max(0.5,ans*0.02),"The amount of solute does not change during dilution, so c\u2081V\u2081 = c\u2082V\u2082. Substitute: "+F3(c1)+" mol/L \u00D7 "+v1+" mL = "+F3(c2)+" mol/L \u00D7 V\u2082. Solving gives V\u2082 = "+iF(c1*v1)+" / "+F3(c2)+" = <b>"+F3(ans)+" mL</b>.",{c1:c1,v1:v1,c2:c2});
   }
-  var cc1=pick([0.50,1.00,2.00,3.00,4.00,6.00]),vv1=ri(10,200),fac=pick([2,3,4,5]),vv2=vv1*fac,ans2=cc1*vv1/vv2;
-  return numq("A student takes "+vv1+" mL of "+fmt(cc1)+" mol/L "+stock+" and dilutes it to a final volume of "+vv2+" mL, using c\u2081V\u2081 = c\u2082V\u2082. What is the concentration of the diluted solution? Give your answer in mol/L.",ans2,Math.max(0.005,ans2*0.02),"The amount of solute does not change during dilution, so c\u2081V\u2081 = c\u2082V\u2082. Substitute: "+fmt(cc1)+" \u00D7 "+vv1+" = c\u2082 \u00D7 "+vv2+". Solving gives c\u2082 = "+fmt(cc1*vv1)+" / "+vv2+" = <b>"+fmt(ans2)+" mol/L</b>.",{c1:cc1,v1:vv1,v2:vv2});
+  var cc1=pick([0.50,1.00,2.00,3.00,4.00,6.00]),vv1=ri(10,200),fac=pick([2,3,4,5]),vv2=vv1*fac,ans2=sfR(cc1*vv1/vv2,3);
+  return numq("A student takes "+vv1+" mL of "+F3(cc1)+" mol/L "+stock+" and dilutes it to a final volume of "+vv2+" mL, using c\u2081V\u2081 = c\u2082V\u2082. What is the concentration of the diluted solution? Give your answer in mol/L.",ans2,Math.max(0.005,ans2*0.02),"The amount of solute does not change during dilution, so c\u2081V\u2081 = c\u2082V\u2082. Substitute: "+F3(cc1)+" mol/L \u00D7 "+vv1+" mL = c\u2082 \u00D7 "+vv2+" mL. Solving gives c\u2082 = "+iF(cc1*vv1)+" / "+vv2+" = <b>"+F3(ans2)+" mol/L</b>.",{c1:cc1,v1:vv1,v2:vv2});
 });
 
 E("u1-58-limiting-theoretical-yield",1,["5.8"],3,"gen",function(){
@@ -1249,9 +1264,10 @@ E("u1-58-limiting-theoretical-yield",1,["5.8"],3,"gen",function(){
   ];
   var r=pick(rxns),pA=ri(20,300)/100,pB=Math.round(pA*pick([0.5,0.7,1.4,1.8])*100)/100;
   var massA=Math.round((pA*r.A.c/r.P.c)*r.A.m*10)/10,massB=Math.round((pB*r.B.c/r.P.c)*r.B.m*10)/10;
-  var fromA=(massA/r.A.m)*r.P.c/r.A.c,fromB=(massB/r.B.m)*r.P.c/r.B.c;
-  var lim=fromA<fromB?r.A.f:r.B.f,nP=Math.min(fromA,fromB),ans=nP*r.P.m;
-  return numq("For the reaction "+r.eq+", a mixture of "+fmt(massA)+" g of "+r.A.f+" and "+fmt(massB)+" g of "+r.B.f+" reacts. Calculate the theoretical yield of "+r.P.f+". Give your answer in g.",ans,Math.max(0.05,ans*0.02),"Test each reactant. From "+r.A.f+": "+fmt(massA)+" / "+fmt(r.A.m)+" = "+fmt(massA/r.A.m)+" mol, which can make "+fmt(massA/r.A.m)+" \u00D7 ("+r.P.c+" / "+r.A.c+") = "+fmt(fromA)+" mol of "+r.P.f+". From "+r.B.f+": "+fmt(massB)+" / "+fmt(r.B.m)+" = "+fmt(massB/r.B.m)+" mol, which can make "+fmt(fromB)+" mol of "+r.P.f+". The smaller amount wins, so "+lim+" is the limiting reactant. Theoretical yield = "+fmt(nP)+" \u00D7 "+fmt(r.P.m)+" = <b>"+fmt(ans)+" g</b>.",{eq:r.eq,massA:massA,massB:massB,lim:lim});
+  var nA=sfR(massA/r.A.m,4),nB=sfR(massB/r.B.m,4);
+  var fromA=sfR(nA*r.P.c/r.A.c,4),fromB=sfR(nB*r.P.c/r.B.c,4);
+  var lim=fromA<fromB?r.A.f:r.B.f,nP=Math.min(fromA,fromB),ans=sfR(nP*r.P.m,3);
+  return numq("For the reaction "+r.eq+", a mixture of "+gF(massA)+" g of "+r.A.f+" and "+gF(massB)+" g of "+r.B.f+" reacts. Calculate the theoretical yield of "+r.P.f+". Give your answer in g.",ans,Math.max(0.05,ans*0.02),"Test each reactant. From "+r.A.f+": "+gF(massA)+" g / "+fmtF(r.A.m,2)+" g/mol = "+iF(nA)+" mol, which can make "+iF(nA)+" \u00D7 ("+r.P.c+" / "+r.A.c+") = "+iF(fromA)+" mol of "+r.P.f+". From "+r.B.f+": "+gF(massB)+" g / "+fmtF(r.B.m,2)+" g/mol = "+iF(nB)+" mol, which can make "+iF(nB)+" \u00D7 ("+r.P.c+" / "+r.B.c+") = "+iF(fromB)+" mol of "+r.P.f+". The smaller amount wins, so "+lim+" is the limiting reactant. Theoretical yield = "+iF(nP)+" mol \u00D7 "+fmtF(r.P.m,2)+" g/mol = <b>"+F3(ans)+" g</b>.",{eq:r.eq,massA:massA,massB:massB,lim:lim});
 });
 
 E("u1-58-excess-remaining",1,["5.8"],3,"gen",function(){
@@ -1264,16 +1280,16 @@ E("u1-58-excess-remaining",1,["5.8"],3,"gen",function(){
   ];
   var r=pick(rxns),pA=ri(20,300)/100,pB=Math.round(pA*pick([0.5,0.7,1.4,1.8])*100)/100;
   var massA=Math.round((pA*r.A.c/r.P.c)*r.A.m*10)/10,massB=Math.round((pB*r.B.c/r.P.c)*r.B.m*10)/10;
-  var nA=massA/r.A.m,nB=massB/r.B.m,fromA=nA*r.P.c/r.A.c,fromB=nB*r.P.c/r.B.c;
+  var nA=sfR(massA/r.A.m,4),nB=sfR(massB/r.B.m,4),fromA=sfR(nA*r.P.c/r.A.c,4),fromB=sfR(nB*r.P.c/r.B.c,4);
   var aLimits=fromA<fromB,L=aLimits?r.A:r.B,X=aLimits?r.B:r.A,nL=aLimits?nA:nB,nX=aLimits?nB:nA,massX=aLimits?massB:massA;
-  var used=nL*X.c/L.c,left=nX-used,ans=left*X.m;
-  return numq("For the reaction "+r.eq+", a mixture of "+fmt(massA)+" g of "+r.A.f+" and "+fmt(massB)+" g of "+r.B.f+" reacts completely. What mass of the excess reactant remains unreacted? Give your answer in g.",ans,Math.max(0.05,ans*0.02),"First find the limiting reactant. "+r.A.f+" can make "+fmt(fromA)+" mol of "+r.P.f+" and "+r.B.f+" can make "+fmt(fromB)+" mol, so "+L.f+" is limiting and "+X.f+" is in excess. The limiting reactant uses "+fmt(nL)+" \u00D7 ("+X.c+" / "+L.c+") = "+fmt(used)+" mol of "+X.f+". Excess remaining = "+fmt(nX)+" - "+fmt(used)+" = "+fmt(left)+" mol, which is "+fmt(left)+" \u00D7 "+fmt(X.m)+" = <b>"+fmt(ans)+" g</b> of "+X.f+".",{eq:r.eq,massA:massA,massB:massB,excess:X.f});
+  var used=sfR(nL*X.c/L.c,4),left=sfR(nX-used,4),ans=sfR(left*X.m,3);
+  return numq("For the reaction "+r.eq+", a mixture of "+gF(massA)+" g of "+r.A.f+" and "+gF(massB)+" g of "+r.B.f+" reacts completely. What mass of the excess reactant remains unreacted? Give your answer in g.",ans,Math.max(0.05,ans*0.02),"First find the limiting reactant. "+r.A.f+" can make "+iF(fromA)+" mol of "+r.P.f+" and "+r.B.f+" can make "+iF(fromB)+" mol, so "+L.f+" is limiting and "+X.f+" is in excess. The limiting reactant uses "+iF(nL)+" mol \u00D7 ("+X.c+" / "+L.c+") = "+iF(used)+" mol of "+X.f+". Excess remaining = "+iF(nX)+" - "+iF(used)+" = "+iF(left)+" mol, which is "+iF(left)+" \u00D7 "+fmtF(X.m,2)+" g/mol = <b>"+F3(ans)+" g</b> of "+X.f+".",{eq:r.eq,massA:massA,massB:massB,excess:X.f});
 });
 
 E("u1-59-percent-yield-direct",1,["5.9"],2,"gen",function(){
   var prods=pick(["aspirin","ammonia","methanol","ethanol","calcium oxide","sodium hydroxide","ibuprofen","copper metal"]);
-  var theo=ri(50,900)/10,pct=ri(55,98),act=Math.round(theo*pct/100*10)/10,ans=act/theo*100;
-  return numq("In a preparation of "+prods+", the theoretical yield is "+fmt(theo)+" g and the actual yield obtained is "+fmt(act)+" g. Calculate the percent yield. Give your answer in percent.",ans,Math.max(0.5,ans*0.02),"Percent yield = (actual yield / theoretical yield) \u00D7 100. Substitute: ("+fmt(act)+" / "+fmt(theo)+") \u00D7 100 = <b>"+fmt(ans)+" %</b>.",{prod:prods,theo:theo,act:act});
+  var theo=ri(50,900)/10,pct=ri(55,98),act=Math.round(theo*pct/100*10)/10,ans=sfR(act/theo*100,3);
+  return numq("In a preparation of "+prods+", the theoretical yield is "+gF(theo)+" g and the actual yield obtained is "+gF(act)+" g. Calculate the percent yield. Give your answer in percent.",ans,Math.max(0.5,ans*0.02),"Percent yield = (actual yield / theoretical yield) \u00D7 100. Substitute: ("+gF(act)+" g / "+gF(theo)+" g) \u00D7 100 = <b>"+F3(ans)+" %</b>.",{prod:prods,theo:theo,act:act});
 });
 
 E("u1-59-percent-yield-from-reaction",1,["5.9"],2,"gen",function(){
@@ -1284,9 +1300,9 @@ E("u1-59-percent-yield-from-reaction",1,["5.9"],2,"gen",function(){
     {eq:"CH\u2084 + 2O\u2082 \u2192 CO\u2082 + 2H\u2082O",A:{f:"CH\u2084",m:CHEM_AM.C+4*CHEM_AM.H,c:1},B:{f:"CO\u2082",m:CHEM_AM.C+2*CHEM_AM.O,c:1}},
     {eq:"Zn + 2HCl \u2192 ZnCl\u2082 + H\u2082",A:{f:"Zn",m:CHEM_AM.Zn,c:1},B:{f:"ZnCl\u2082",m:CHEM_AM.Zn+2*CHEM_AM.Cl,c:1}}
   ];
-  var r=pick(rxns),massA=ri(20,1200)/10,theo=(massA/r.A.m)*(r.B.c/r.A.c)*r.B.m;
-  var pct=ri(58,97),act=Math.round(theo*pct/100*10)/10,ans=act/theo*100;
-  return numq("For the reaction "+r.eq+", "+fmt(massA)+" g of "+r.A.f+" reacts and "+fmt(act)+" g of "+r.B.f+" is actually collected. Calculate the percent yield of "+r.B.f+". Give your answer in percent.",ans,Math.max(0.5,ans*0.02),"First calculate the theoretical yield: "+fmt(massA)+" / "+fmt(r.A.m)+" = "+fmt(massA/r.A.m)+" mol of "+r.A.f+", then \u00D7 ("+r.B.c+" / "+r.A.c+") \u00D7 "+fmt(r.B.m)+" = "+fmt(theo)+" g of "+r.B.f+". Then percent yield = (actual / theoretical) \u00D7 100 = ("+fmt(act)+" / "+fmt(theo)+") \u00D7 100 = <b>"+fmt(ans)+" %</b>.",{eq:r.eq,massA:massA,act:act});
+  var r=pick(rxns),massA=ri(20,1200)/10,nA=sfR(massA/r.A.m,4),theoFull=(massA/r.A.m)*(r.B.c/r.A.c)*r.B.m,theo=sfR(nA*(r.B.c/r.A.c)*r.B.m,4);
+  var pct=ri(58,97),act=Math.round(theoFull*pct/100*10)/10,ans=sfR(act/theo*100,3);
+  return numq("For the reaction "+r.eq+", "+gF(massA)+" g of "+r.A.f+" reacts and "+gF(act)+" g of "+r.B.f+" is actually collected. Calculate the percent yield of "+r.B.f+". Give your answer in percent.",ans,Math.max(0.5,ans*0.02),"First calculate the theoretical yield: "+gF(massA)+" g / "+fmtF(r.A.m,2)+" g/mol = "+iF(nA)+" mol of "+r.A.f+", then \u00D7 ("+r.B.c+" / "+r.A.c+") \u00D7 "+fmtF(r.B.m,2)+" g/mol = "+iF(theo)+" g of "+r.B.f+". Then percent yield = (actual / theoretical) \u00D7 100 = ("+gF(act)+" g / "+iF(theo)+" g) \u00D7 100 = <b>"+F3(ans)+" %</b>.",{eq:r.eq,massA:massA,act:act});
 });
 
 E("u1-59-maximize-yield",1,["5.9"],3,"var",varset([
@@ -1365,18 +1381,18 @@ E("u1-510-antacid-calculation",1,["5.10"],2,"gen",function(){
     {eq:"Al(OH)\u2083 + 3HCl \u2192 AlCl\u2083 + 3H\u2082O",f:"Al(OH)\u2083",m:CHEM_AM.Al+3*(CHEM_AM.O+CHEM_AM.H),ratio:3}
   ];
   var b=pick(branches),mass=ri(20,300)/100,conc=pick([0.05,0.10,0.16]);
-  var nAnt=mass/b.m,nHCl=nAnt*b.ratio,ans=nHCl/conc*1000;
-  return numq("An antacid tablet contains "+fmt(mass)+" g of "+b.f+", which neutralizes stomach acid (HCl) by the reaction "+b.eq+". What volume of "+fmt(conc)+" mol/L HCl can the tablet neutralize? Give your answer in mL.",ans,Math.max(1,ans*0.02),"Change the mass of antacid to moles: "+fmt(mass)+" / "+fmt(b.m)+" = "+fmt(nAnt)+" mol. Apply the mole ratio: "+fmt(nAnt)+" \u00D7 "+b.ratio+" = "+fmt(nHCl)+" mol of HCl. Change moles to volume with V = n / c: "+fmt(nHCl)+" / "+fmt(conc)+" = "+fmt(nHCl/conc)+" L = <b>"+fmt(ans)+" mL</b>.",{cp:b.f,mass:mass,conc:conc});
+  var nAnt=sfR(mass/b.m,4),nHCl=sfR(nAnt*b.ratio,4),vL=sfR(nHCl/conc,4),ans=sfR(vL*1000,3);
+  return numq("An antacid tablet contains "+gF(mass)+" g of "+b.f+", which neutralizes stomach acid (HCl) by the reaction "+b.eq+". What volume of "+F3(conc)+" mol/L HCl can the tablet neutralize? Give your answer in mL.",ans,Math.max(1,ans*0.02),"Change the mass of antacid to moles: "+gF(mass)+" g / "+fmtF(b.m,2)+" g/mol = "+iF(nAnt)+" mol. Apply the mole ratio: "+iF(nAnt)+" \u00D7 "+b.ratio+" = "+iF(nHCl)+" mol of HCl. Change moles to volume with V = n / c: "+iF(nHCl)+" mol / "+F3(conc)+" mol/L = "+iF(vL)+" L = <b>"+F3(ans)+" mL</b>.",{cp:b.f,mass:mass,conc:conc});
 });
 
 E("u1-510-airbag-and-fertilizer",1,["5.10"],2,"gen",function(){
   if(pick(["airbag","fertilizer"])==="airbag"){
-    var mNaN3=CHEM_AM.Na+3*CHEM_AM.N,mass=ri(20,120),n=mass/mNaN3,nN2=n*3/2,ans=nN2*22.4;
-    return numq("A vehicle airbag contains "+mass+" g of sodium azide, NaN\u2083, which decomposes by the reaction 2NaN\u2083 \u2192 2Na + 3N\u2082. What volume of nitrogen gas at STP does the airbag produce? Give your answer in L (the molar mass of NaN\u2083 is "+fmt(mNaN3)+" g/mol).",ans,Math.max(0.05,ans*0.02),"Change the mass to moles: "+mass+" / "+fmt(mNaN3)+" = "+fmt(n)+" mol of NaN\u2083. Apply the mole ratio: "+fmt(n)+" \u00D7 (3 / 2) = "+fmt(nN2)+" mol of N\u2082. Change to volume at STP: "+fmt(nN2)+" \u00D7 22.4 = <b>"+fmt(ans)+" L</b>.",{mass:mass});
+    var mNaN3=CHEM_AM.Na+3*CHEM_AM.N,mass=ri(20,120),n=sfR(mass/mNaN3,4),nN2=sfR(n*3/2,4),ans=sfR(nN2*22.4,3);
+    return numq("A vehicle airbag contains "+mass+" g of sodium azide, NaN\u2083, which decomposes by the reaction 2NaN\u2083 \u2192 2Na + 3N\u2082. What volume of nitrogen gas at STP does the airbag produce? Give your answer in L (the molar mass of NaN\u2083 is "+fmtF(mNaN3,2)+" g/mol).",ans,Math.max(0.05,ans*0.02),"Change the mass to moles: "+mass+" g / "+fmtF(mNaN3,2)+" g/mol = "+iF(n)+" mol of NaN\u2083. Apply the mole ratio: "+iF(n)+" \u00D7 (3 / 2) = "+iF(nN2)+" mol of N\u2082. Change to volume at STP: "+iF(nN2)+" \u00D7 22.4 L/mol = <b>"+F3(ans)+" L</b>.",{mass:mass});
   }
   var ferts=[{f:"urea, CO(NH\u2082)\u2082",m:CHEM_AM.C+CHEM_AM.O+2*(CHEM_AM.N+2*CHEM_AM.H),nMass:2*CHEM_AM.N},{f:"ammonium nitrate, NH\u2084NO\u2083",m:2*CHEM_AM.N+4*CHEM_AM.H+3*CHEM_AM.O,nMass:2*CHEM_AM.N},{f:"ammonium sulfate, (NH\u2084)\u2082SO\u2084",m:2*CHEM_AM.N+8*CHEM_AM.H+CHEM_AM.S+4*CHEM_AM.O,nMass:2*CHEM_AM.N}];
-  var f=pick(ferts),bag=pick([10,20,25,40]),ans=bag*f.nMass/f.m;
-  return numq("A "+bag+" kg bag of fertilizer is pure "+f.f+". What mass of nitrogen does the bag contain? Give your answer in kg (the molar mass of the fertilizer is "+fmt(f.m)+" g/mol, and each formula unit contains "+fmt(f.nMass)+" g of nitrogen per mole).",ans,Math.max(0.02,ans*0.02),"The fraction of nitrogen by mass is "+fmt(f.nMass)+" / "+fmt(f.m)+" = "+fmt(f.nMass/f.m)+". Multiply by the mass of the bag: "+bag+" \u00D7 "+fmt(f.nMass/f.m)+" = <b>"+fmt(ans)+" kg</b> of nitrogen.",{fert:f.f,bag:bag});
+  var f=pick(ferts),bag=pick([10,20,25,40]),frac=sfR(f.nMass/f.m,4),ans=sfR(bag*frac,3);
+  return numq("A "+bag+" kg bag of fertilizer is pure "+f.f+". What mass of nitrogen does the bag contain? Give your answer in kg (the molar mass of the fertilizer is "+fmtF(f.m,2)+" g/mol, and each formula unit contains "+fmtF(f.nMass,2)+" g of nitrogen per mole).",ans,Math.max(0.02,ans*0.02),"The fraction of nitrogen by mass is "+fmtF(f.nMass,2)+" / "+fmtF(f.m,2)+" = "+iF(frac)+". Multiply by the mass of the bag: "+bag+" kg \u00D7 "+iF(frac)+" = <b>"+F3(ans)+" kg</b> of nitrogen.",{fert:f.f,bag:bag});
 });
 
 E("u1-510-application-reasoning",1,["5.10"],2,"var",varset([
@@ -2708,12 +2724,12 @@ E("u2-51", 2, ["6.11"], 2, "gen", function () {
   ];
   var s = pick(salts);
   var M = 0; s.comp.forEach(function (c) { M += CHEM_AM[c[0]] * c[1]; });
-  var target = pick([0.05, 0.10, 0.20, 0.25, 0.40, 0.50, 0.80, 1.00]);
+  var target = pick([0.05, 0.10, 0.20, 0.25, 0.40, 0.50, 0.80, 1.20]);
   var per100 = pick([true, false]);
   var gL = target * M;
-  var given = per100 ? fmtF(gL / 10, 2) + " g per 100 mL" : fmtF(gL, 2) + " g per L";
+  var given = per100 ? iF(gL / 10) + " g per 100 mL" : iF(gL) + " g per L";
   var ans = target;
-  return numq("The solubility of " + s.f + " is " + given + " at the stated temperature. The molar mass of " + s.f + " is " + fmtF(M, 2) + " g/mol. Calculate its molar solubility in mol/L.", ans, Math.max(0.01, ans * 0.02), "Convert the mass solubility to a per litre basis first. " + (per100 ? "A solubility of " + fmtF(gL / 10, 2) + " g per 100 mL is " + fmtF(gL, 2) + " g in 1000 mL, that is, per litre." : "The solubility is already given per litre as " + fmtF(gL, 2) + " g/L.") + " Divide the mass per litre by the molar mass: " + fmtF(gL, 2) + " / " + fmtF(M, 2) + " = " + fmtF(ans, 2) + " mol/L. That is the molar solubility.", { salt: s.f, M: fmtF(M, 2) });
+  return numq("The solubility of " + s.f + " is " + given + " at the stated temperature. The molar mass of " + s.f + " is " + fmtF(M, 2) + " g/mol. Calculate its molar solubility in mol/L.", ans, Math.max(0.01, ans * 0.02), "Convert the mass solubility to a per litre basis first. " + (per100 ? "A solubility of " + iF(gL / 10) + " g per 100 mL is " + iF(gL) + " g in 1000 mL, that is, per litre." : "The solubility is already given per litre as " + iF(gL) + " g/L.") + " Divide the mass per litre by the molar mass: " + iF(gL) + " g / " + fmtF(M, 2) + " g/mol = <b>" + F3(ans) + " mol/L</b>. That is the molar solubility.", { salt: s.f, M: fmtF(M, 2) });
 });
 
 E("u2-52", 2, ["6.11"], 2, "gen", function () {
@@ -2730,7 +2746,7 @@ E("u2-52", 2, ["6.11"], 2, "gen", function () {
   var temp = pick([20, 25, 30]);
   var g100 = target * M / 10;
   var ans = target;
-  return numq("At " + temp + " °C, a saturated solution of " + s.f + " contains " + fmtF(g100, 2) + " g of the salt in every 100 mL of solution. The molar mass of " + s.f + " is " + fmtF(M, 2) + " g/mol. What is the molar solubility of " + s.f + " in mol/L at this temperature?", ans, Math.max(0.01, ans * 0.02), "Scale the mass up to one litre: " + fmtF(g100, 2) + " g per 100 mL means 10 x " + fmtF(g100, 2) + " = " + fmtF(g100 * 10, 2) + " g per litre. Convert mass to amount by dividing by the molar mass: " + fmtF(g100 * 10, 2) + " / " + fmtF(M, 2) + " = " + fmtF(ans, 2) + " mol/L. That amount per litre is the molar solubility.", { salt: s.f, M: fmtF(M, 2), temp: temp });
+  return numq("At " + temp + " °C, a saturated solution of " + s.f + " contains " + iF(g100) + " g of the salt in every 100 mL of solution. The molar mass of " + s.f + " is " + fmtF(M, 2) + " g/mol. What is the molar solubility of " + s.f + " in mol/L at this temperature?", ans, Math.max(0.01, ans * 0.02), "Scale the mass up to one litre: " + iF(g100) + " g per 100 mL means 10 x " + iF(g100) + " = " + iF(g100 * 10) + " g per litre. Convert mass to amount by dividing by the molar mass: " + iF(g100 * 10) + " g / " + fmtF(M, 2) + " g/mol = <b>" + F3(ans) + " mol/L</b>. That amount per litre is the molar solubility.", { salt: s.f, M: fmtF(M, 2), temp: temp });
 });
 
 E("u2-53", 2, ["6.11"], 3, "gen", function () {
@@ -2743,16 +2759,17 @@ E("u2-53", 2, ["6.11"], 3, "gen", function () {
   ];
   var s = pick(salts);
   var M = 0; s.comp.forEach(function (c) { M += CHEM_AM[c[0]] * c[1]; });
-  var target = pick([0.20, 0.25, 0.40, 0.50, 0.80, 1.00]);
+  var target = pick([0.20, 0.25, 0.40, 0.50, 0.80, 1.20]);
   var vol = pick([200, 250, 400, 500, 1000]);
   var mass = target * M * vol / 1000;
   var askMoles = pick([true, false]);
   if (askMoles) {
     var ansM = target * vol / 1000;
-    return numq("A saturated solution of " + s.f + " is prepared with a volume of " + vol + " mL. It contains " + fmtF(mass, 2) + " g of dissolved " + s.f + ". The molar mass of " + s.f + " is " + fmtF(M, 2) + " g/mol. How many moles of " + s.f + " are dissolved in the solution?", ansM, Math.max(0.01, ansM * 0.02), "Amount in moles is mass divided by molar mass. The amount dissolved is " + fmtF(mass, 2) + " / " + fmtF(M, 2) + " = " + fmtF(ansM, 3) + " mol. The volume is not needed for this question, but it is consistent with a molar solubility of " + fmtF(target, 2) + " mol/L.", { salt: s.f, vol: vol });
+    return numq("A saturated solution of " + s.f + " is prepared with a volume of " + vol + " mL. It contains " + iF(mass) + " g of dissolved " + s.f + ". The molar mass of " + s.f + " is " + fmtF(M, 2) + " g/mol. How many moles of " + s.f + " are dissolved in the solution?", ansM, Math.max(0.01, ansM * 0.02), "Amount in moles is mass divided by molar mass. The amount dissolved is " + iF(mass) + " g / " + fmtF(M, 2) + " g/mol = <b>" + F3(ansM) + " mol</b>. The volume is not needed for this question, but it is consistent with a molar solubility of " + F3(target) + " mol/L.", { salt: s.f, vol: vol });
   }
   var ans = target;
-  return numq("A saturated solution of " + s.f + " is prepared with a volume of " + vol + " mL. It contains " + fmtF(mass, 2) + " g of dissolved " + s.f + ". The molar mass of " + s.f + " is " + fmtF(M, 2) + " g/mol. Calculate the molar solubility of " + s.f + " in mol/L.", ans, Math.max(0.01, ans * 0.02), "First find the amount dissolved: " + fmtF(mass, 2) + " / " + fmtF(M, 2) + " = " + fmtF(target * vol / 1000, 3) + " mol. Molar solubility is amount per litre of solution, and the volume is " + vol + " mL, which is " + fmtF(vol / 1000, 3) + " L. Dividing gives " + fmtF(target * vol / 1000, 3) + " / " + fmtF(vol / 1000, 3) + " = " + fmtF(ans, 2) + " mol/L.", { salt: s.f, vol: vol });
+  var amt = sfR(sfR(mass, 4) / M, 4);
+  return numq("A saturated solution of " + s.f + " is prepared with a volume of " + vol + " mL. It contains " + iF(mass) + " g of dissolved " + s.f + ". The molar mass of " + s.f + " is " + fmtF(M, 2) + " g/mol. Calculate the molar solubility of " + s.f + " in mol/L.", ans, Math.max(0.01, ans * 0.02), "First find the amount dissolved: " + iF(mass) + " g / " + fmtF(M, 2) + " g/mol = " + iF(amt) + " mol. Molar solubility is amount per litre of solution, and the volume is " + vol + " mL, which is " + F3(vol / 1000) + " L. Dividing gives " + iF(amt) + " mol / " + F3(vol / 1000) + " L = <b>" + F3(ans) + " mol/L</b>.", { salt: s.f, vol: vol });
 });
 
 // 6.12 Effect of solutes on the melting point of ice
@@ -2799,7 +2816,7 @@ E("u2-55", 2, ["6.12"], 2, "gen", function () {
     "Pure water with no solute, because adding solute always raises the melting point of ice",
     winner + ", because its solute has the greatest molar mass of the two solutes"
   ].filter(function (x) { return x !== correct; })).slice(0, 3);
-  return mcq("Solution A is made with " + fmt(ca) + " mol/L of " + a.f + ". Solution B is made with " + fmt(cb) + " mol/L of " + b.f + ". Equal samples of ice are placed in each solution. Which solution gives the lower melting point for the ice?", correct, ds, "The size of the melting point lowering depends on the total concentration of dissolved particles, counting each ion separately when a solute splits in solution. Solution A has " + fmt(ca) + " x " + a.p + " = " + fmt(a.p * ca) + " mol/L of particles, and solution B has " + fmt(cb) + " x " + b.p + " = " + fmt(b.p * cb) + " mol/L of particles. The solution with more particles per litre, " + winner + ", lowers the melting point more.", { a: a.f, b: b.f });
+  return mcq("Solution A is made with " + F3(ca) + " mol/L of " + a.f + ". Solution B is made with " + F3(cb) + " mol/L of " + b.f + ". Equal samples of ice are placed in each solution. Which solution gives the lower melting point for the ice?", correct, ds, "The size of the melting point lowering depends on the total concentration of dissolved particles, counting each ion separately when a solute splits in solution. Solution A has " + F3(ca) + " x " + a.p + " = " + F3(a.p * ca) + " mol/L of particles, and solution B has " + F3(cb) + " x " + b.p + " = " + F3(b.p * cb) + " mol/L of particles. The solution with more particles per litre, " + winner + ", lowers the melting point more.", { a: a.f, b: b.f });
 });
 
 E("u2-56", 2, ["6.12"], 3, "var", varset([
@@ -3896,11 +3913,11 @@ E("br-b2-avg-mass", 4, ["B.2"], 2, "gen", function () {
   var p1 = Math.round((pr.base + ri(-10, 10) * 0.1) * 10) / 10;
   var p2 = Math.round((100 - p1) * 10) / 10;
   var avg = (pr.m1 * p1 + pr.m2 * p2) / 100;
-  var ans = Math.round(avg * 100) / 100;
+  var ans = sfR(avg, 3);
   return numq(
-    cap(pr.name) + " has two isotopes" + pr.note + ": " + pr.name + "-" + pr.m1 + " with an abundance of " + fmtF(p1, 1) + " percent and " + pr.name + "-" + pr.m2 + " with an abundance of " + fmtF(p2, 1) + " percent. Calculate the average atomic mass, in atomic mass units (u).",
+    cap(pr.name) + " has two isotopes" + pr.note + ": " + pr.name + "-" + pr.m1 + " with an abundance of " + gF(p1) + " percent and " + pr.name + "-" + pr.m2 + " with an abundance of " + gF(p2) + " percent. Calculate the average atomic mass, in atomic mass units (u).",
     ans, 0.05,
-    "Multiply each isotope mass by its abundance as a decimal. (" + pr.m1 + " x " + fmtF(p1 / 100, 3) + ") + (" + pr.m2 + " x " + fmtF(p2 / 100, 3) + ") = " + fmtF(pr.m1 * p1 / 100, 2) + " + " + fmtF(pr.m2 * p2 / 100, 2) + " = <b>" + fmtF(ans, 2) + " u</b>.",
+    "Multiply each isotope mass by its abundance as a decimal. (" + pr.m1 + " x " + sfF(p1 / 100, 3) + ") + (" + pr.m2 + " x " + sfF(p2 / 100, 3) + ") = " + iF(pr.m1 * p1 / 100) + " + " + iF(pr.m2 * p2 / 100) + " = <b>" + F3(ans) + " u</b>.",
     { el: pr.name, m1: pr.m1, m2: pr.m2, p1: p1 });
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 });
